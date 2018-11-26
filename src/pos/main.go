@@ -19,7 +19,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Block represents each 'item' in the blockchain
+//  区块结构定义
 type Block struct {
 	Index     int
 	Timestamp string
@@ -59,7 +59,7 @@ func main() {
 
 	httpPort := os.Getenv("PORT")
 
-	// start TCP and serve TCP server
+	// tcp 服务器，localhost 9000
 	server, err := net.Listen("tcp", ":"+httpPort)
 	if err != nil {
 		log.Fatal(err)
@@ -90,10 +90,9 @@ func main() {
 	}
 }
 
-// pickWinner creates a lottery pool of validators and chooses the validator who gets to forge a block to the blockchain
-// by random selecting from the pool, weighted by amount of tokens staked
+// 按照权重随机挑选获胜者出块
 func pickWinner() {
-	time.Sleep(30 * time.Second)
+	time.Sleep(10 * time.Second)
 	mutex.Lock()
 	temp := tempBlocks
 	mutex.Unlock()
@@ -106,14 +105,14 @@ func pickWinner() {
 		// in traditional proof of stake, validators can participate without submitting a block to be forged
 	OUTER:
 		for _, block := range temp {
-			// if already in lottery pool, skip
+			// 如果已经在lottery pool中，skip
 			for _, node := range lotteryPool {
 				if block.Validator == node {
 					continue OUTER
 				}
 			}
 
-			// lock list of validators to prevent data race
+			// 防止数据争用
 			mutex.Lock()
 			setValidators := validators
 			mutex.Unlock()
@@ -126,12 +125,12 @@ func pickWinner() {
 			}
 		}
 
-		// randomly pick winner from lottery pool
+		//lotterypool中随机挑选winner
 		s := rand.NewSource(time.Now().Unix())
 		r := rand.New(s)
 		lotteryWinner := lotteryPool[r.Intn(len(lotteryPool))]
 
-		// add block of winner to blockchain and let all the other nodes know
+		// 把winner的区块加入到区块链上并且让其他节点知道
 		for _, block := range temp {
 			if block.Validator == lotteryWinner {
 				mutex.Lock()
@@ -159,11 +158,10 @@ func handleConn(conn net.Conn) {
 			io.WriteString(conn, msg)
 		}
 	}()
-	// validator address
+	// 验证器地址
 	var address string
 
-	// allow user to allocate number of tokens to stake
-	// the greater the number of tokens, the greater chance to forging a new block
+	// 允许输入token值，越大越有机会挖矿
 	io.WriteString(conn, "Enter token balance:")
 	scanBalance := bufio.NewScanner(conn)
 	for scanBalance.Scan() {
@@ -179,7 +177,7 @@ func handleConn(conn net.Conn) {
 		break
 	}
 
-	io.WriteString(conn, "\nEnter a new BPM:")
+	io.WriteString(conn, "\nEnter a new data:")
 
 	scanBPM := bufio.NewScanner(conn)
 
@@ -213,7 +211,7 @@ func handleConn(conn net.Conn) {
 		}
 	}()
 
-	// simulate receiving broadcast
+	// 模拟接收广播
 	for {
 		time.Sleep(time.Minute)
 		mutex.Lock()
